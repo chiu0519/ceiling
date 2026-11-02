@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>明架天花板分邊計算</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1d2330;--sub:#6b7380;--line:#dfe3ea;--acc:#2f6fed;--ok:#1a7f4b;--warn:#b45309;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171c;--card:#1e222a;--text:#e8ebf0;--sub:#98a1af;--line:#323844;--acc:#6d9bff;--ok:#4cc38a;--warn:#f0a95a}}
+:root[data-theme="dark"]{--bg:#14171c;--card:#1e222a;--text:#e8ebf0;--sub:#98a1af;--line:#323844;--acc:#6d9bff;--ok:#4cc38a;--warn:#f0a95a}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;padding:16px;max-width:520px;margin:0 auto}
+h1{font-size:20px;margin:8px 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+label{display:block;font-size:13px;color:var(--sub);margin:8px 0 4px}
+input,select{width:100%;box-sizing:border-box;font-size:20px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
+.row{display:flex;gap:10px}.row>div{flex:1}
+h2{font-size:16px;margin:0 0 8px}
+.big{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:15px}
+.big b{font-size:18px;color:var(--acc)}
+.note{font-size:13px;color:var(--sub);margin-top:8px;line-height:1.5}
+.warn{color:var(--warn)}.ok{color:var(--ok)}
+.bar{display:flex;height:26px;margin-top:10px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.bar div{display:flex;align-items:center;justify-content:center;font-size:11px;border-right:1px solid var(--line);color:var(--text)}
+.e{background:var(--acc);color:#fff!important}.m{background:var(--bg)}.l{background:#f5c542;color:#222!important}
+</style>
+</head>
+<body>
+<h1>明架天花板分邊計算</h1>
+<div class="card">
+  <div class="row">
+    <div><label>房間寬度 (cm)</label><input id="w" type="number" inputmode="decimal" placeholder="例：400"></div>
+    <div><label>房間長度 (cm)</label><input id="d" type="number" inputmode="decimal" placeholder="例：520"></div>
+  </div>
+  <label>板子尺寸 (cm)，預設 61</label>
+  <input id="s" type="number" inputmode="decimal" value="61">
+  <label>邊板最小寬度警示 (cm)</label>
+  <input id="m" type="number" inputmode="decimal" value="15">
+  <label>板材損耗 (%)</label>
+  <input id="ls" type="number" inputmode="decimal" value="5">
+  <label>主骨方向</label>
+  <select id="md" style="font-size:16px;padding:10px"><option value="v">沿長度方向（圖上下）</option><option value="h">沿寬度方向（圖左右）</option></select>
+  <div class="row">
+    <div><label>主骨單支長 (cm)</label><input id="ml" type="number" inputmode="decimal" value="360" style="font-size:16px"></div>
+    <div><label>L 收邊單支長 (cm)</label><input id="ll" type="number" inputmode="decimal" value="300" style="font-size:16px"></div>
+    <div><label>吊筋間距 (cm)</label><input id="hs" type="number" inputmode="decimal" value="90" style="font-size:16px"></div>
+  </div>
+  <label style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:15px;color:var(--text)"><input id="kp" type="checkbox" style="width:22px;height:22px;flex:none">使用擊釘片（自行裁切吊筋原料），不勾選則用材料行的吊筋成品</label>
+  <div class="row">
+    <div class="hx" style="display:none"><label>每支吊筋所需長度 (cm)</label><input id="hl" type="number" inputmode="decimal" value="60" style="font-size:16px"></div>
+    <div class="hx" style="display:none"><label>吊筋原料單支長 (cm)</label><input id="hr" type="number" inputmode="decimal" value="300" style="font-size:16px"></div>
+    <div><label>靠牆頭尾吊筋距牆 (cm)</label><input id="he" type="number" inputmode="decimal" value="30" style="font-size:16px"></div>
+  </div>
+  <label style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:15px;color:var(--text)"><input id="aw" type="checkbox" checked style="width:22px;height:22px;flex:none">寬度方向：整板為雙數時，加一整板再分邊（中間留單數塊放燈）</label>
+  <label style="display:flex;align-items:center;gap:10px;margin-top:10px;font-size:15px;color:var(--text)"><input id="al" type="checkbox" checked style="width:22px;height:22px;flex:none">長度方向：整板為雙數時，加一整板再分邊（中間留單數塊放燈）</label>
+</div>
+<div id="out"></div>
+<div class="card"><h2>排列圖型（不規則房間）</h2>
+<div class="note" style="margin:0 0 8px">用區塊拼出房間形狀：直接拖曳區塊移動（5 cm 吸附），再到下方填各區塊的寬、高、位置。格線以整體外框左上角為基準，依外框寬、高分邊；上方「房間寬度、長度」不影響這裡。</div>
+<svg id="cv" viewBox="0 0 360 300" style="width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;touch-action:none"></svg>
+<label>板條太大警示 (cm)</label><input id="mx" type="number" inputmode="decimal" value="50">
+<div id="segs" style="margin-top:12px"></div>
+<button id="add" style="width:100%;padding:12px;font-size:16px;border:1px dashed var(--acc);border-radius:10px;background:transparent;color:var(--acc)">＋ 新增區塊</button></div>
+<div id="segout"></div>
+<script>
+function calc(total,S,minE,adj){
+  const n=Math.floor(total/S+1e-9);
+  const r=Math.round((total-n*S)*100)/100;
+  let edge,mid,even=(n%2===0);
+  if(even&&adj){edge=(r+S)/2;mid=n-1;}else{edge=r/2;mid=n;}
+  let tip='';
+  if(edge>0&&edge<minE){
+    const n2=n-1,r2=total-n2*S;
+    let e2,m2;
+    if(n2%2===0&&adj){e2=(r2+S)/2;m2=n2-1;}else{e2=r2/2;m2=n2;}
+    tip='邊板偏窄，可改成少 1 塊整板重算：邊板 '+(Math.round(e2*100)/100)+' cm，中間 '+m2+' 塊整板。';
+  }
+  return {n,r,even,edge:Math.round(edge*100)/100,mid,tip};
+}
+function card(title,total,S,minE,adj){
+  const c=calc(total,S,minE,adj);
+  const chk=Math.round((c.edge*2+c.mid*S)*100)/100;
+  let h='<div class="card"><h2>'+title+' '+total+' cm</h2>';
+  h+='<div class="big"><span>整板數</span><b>'+c.n+'（'+(c.even?'雙數':'單數')+'）</b></div>';
+  h+='<div class="big"><span>餘數</span><b>'+c.r+' cm</b></div>';
+  h+='<div class="big"><span>兩側邊板（各）</span><b>'+c.edge+' cm</b></div>';
+  h+='<div class="big"><span>中間整板數</span><b>'+c.mid+' 塊</b></div>';
+  h+='<div class="note">'+(c.even?(adj?'整板為雙數：邊板 = (餘數 + '+S+') ÷ 2，中間減 1 塊，使中間為單數可置中放燈。':'整板為雙數（未加整板）：邊板 = 餘數 ÷ 2，中間為雙數塊，正中央是接縫。'):'整板為單數：邊板 = 餘數 ÷ 2，中間單數塊可置中放燈。')+'</div>';
+  h+='<div class="note '+(chk===total?'ok':'warn')+'">檢查：'+c.edge+'×2 + '+c.mid+'×'+S+' = '+chk+(chk===total?' ✓':' ✗')+'</div>';
+  if(c.tip)h+='<div class="note warn">'+c.tip+'</div>';
+  if(c.edge===0)h+='<div class="note">剛好整除，不需要邊板。</div>';
+  const edgeW=c.edge/total*100,midW=S/total*100;
+  h+='<div class="bar">';
+  if(c.edge>0)h+='<div class="e" style="width:'+edgeW+'%"></div>';
+  for(let i=0;i<c.mid;i++){h+='<div class="'+((c.mid%2===1&&i===(c.mid-1)/2)?'l':'m')+'" style="width:'+midW+'%">'+((c.mid%2===1&&i===(c.mid-1)/2)?'燈':'')+'</div>';}
+  if(c.edge>0)h+='<div class="e" style="width:'+edgeW+'%"></div>';
+  h+='</div></div>';
+  return h;
+}
+function run(){
+  const S=parseFloat(document.getElementById('s').value)||61;
+  const minE=parseFloat(document.getElementById('m').value)||0;
+  const aw=document.getElementById('aw').checked,al=document.getElementById('al').checked;
+  const w=parseFloat(document.getElementById('w').value);
+  const d=parseFloat(document.getElementById('d').value);
+  let h='';
+  if(w>=S)h+=card('寬度',w,S,minE,aw);
+  if(d>=S)h+=card('長度',d,S,minE,al);
+  if(w>=S&&d>=S)h+=matHTML('材料用量（寬 × 長）',mat([{x:0,y:0,w:w,h:d}],lines(w,S,minE,aw),lines(d,S,minE,al),0,0,S));
+  document.getElementById('out').innerHTML=h;
+  runSegs();
+}
+let blocks=[],view=null,drag=null,nid=1;
+const rd=x=>Math.round(x*100)/100;
+function lines(total,S,minE,adj){
+  if(total<S)return [0,total];
+  const c=calc(total,S,minE,adj),pts=[0];
+  for(let k=0;k<=c.mid;k++){const v=rd(c.edge+k*S);if(v>pts[pts.length-1]+0.01&&v<total-0.01)pts.push(v);}
+  pts.push(total);return pts;
+}
+function loc(pts,X){
+  for(const p of pts)if(Math.abs(p-X)<0.01)return{ex:true};
+  let g=0,g2=pts[pts.length-1];
+  for(const p of pts){if(p<X)g=p;else{g2=p;break;}}
+  return{g,g2,ex:false};
+}
+function mat(rects,xs,ys,mx,my,S){
+  const e=0.01;
+  const inU=(x,y)=>rects.some(r=>x>r.x&&x<r.x+r.w&&y>r.y&&y<r.y+r.h);
+  let area=0,full=0,cut=0,small=0,vert=0,hor=0,per=0;
+  const thr=0;
+  rects.forEach(r=>{area+=r.w*r.h;});
+  for(let i=0;i<xs.length-1;i++)for(let j=0;j<ys.length-1;j++){
+    const x0=mx+xs[i],x1=mx+xs[i+1],y0=my+ys[j],y1=my+ys[j+1];
+    let a=0,bx0=1e9,bx1=-1e9,by0=1e9,by1=-1e9;
+    rects.forEach(r=>{const w=Math.min(x1,r.x+r.w)-Math.max(x0,r.x),h=Math.min(y1,r.y+r.h)-Math.max(y0,r.y);if(w>0&&h>0){a+=w*h;bx0=Math.min(bx0,Math.max(x0,r.x));bx1=Math.max(bx1,Math.min(x1,r.x+r.w));by0=Math.min(by0,Math.max(y0,r.y));by1=Math.max(by1,Math.min(y1,r.y+r.h));}});
+    if(a>=0.5){if(a>(x1-x0)*(y1-y0)-0.5&&Math.abs(x1-x0-S)<e&&Math.abs(y1-y0-S)<e)full++;else if(Math.min(bx1-bx0,by1-by0)<thr)small++;else cut++;}
+  }
+  const brk=v=>[...new Set(v.map(rd))].sort((a,b)=>a-b);
+  const yb=brk([...ys.map(v=>my+v),...rects.flatMap(r=>[r.y,r.y+r.h])]);
+  const xb=brk([...xs.map(v=>mx+v),...rects.flatMap(r=>[r.x,r.x+r.w])]);
+  xs.forEach(px=>{const X=mx+px;for(let k=0;k<yb.length-1;k++){const ym=(yb[k]+yb[k+1])/2;if(inU(X-0.5,ym)&&inU(X+0.5,ym))vert+=yb[k+1]-yb[k];}});
+  ys.forEach(py=>{const Y=my+py;for(let k=0;k<xb.length-1;k++){const xm=(xb[k]+xb[k+1])/2;if(inU(xm,Y-0.5)&&inU(xm,Y+0.5))hor+=xb[k+1]-xb[k];}});
+  rects.forEach(b=>{
+    [[0,b.x],[1,b.x+b.w]].forEach(([hi,c])=>{let len=b.h;rects.forEach(o=>{if(o===b)return;const ed=hi?o.x:o.x+o.w;if(Math.abs(ed-c)<e){const ov=Math.min(b.y+b.h,o.y+o.h)-Math.max(b.y,o.y);if(ov>0)len-=ov;}});per+=Math.max(len,0);});
+    [[0,b.y],[1,b.y+b.h]].forEach(([hi,c])=>{let len=b.w;rects.forEach(o=>{if(o===b)return;const ed=hi?o.y:o.y+o.h;if(Math.abs(ed-c)<e){const ov=Math.min(b.x+b.w,o.x+o.w)-Math.max(b.x,o.x);if(ov>0)len-=ov;}});per+=Math.max(len,0);});
+  });
+  const ml=parseFloat(document.getElementById('ml').value)||360,ll=parseFloat(document.getElementById('ll').value)||300,hs=parseFloat(document.getElementById('hs').value)||90;
+  const t=document.getElementById('md').value==='h'?tbars(rects.map(r=>({x:r.y,y:r.x,w:r.h,h:r.w})),ys,xs,my,mx,hs,ml):tbars(rects,xs,ys,mx,my,hs,ml);
+  const hl=parseFloat(document.getElementById('hl').value)||0,hr=parseFloat(document.getElementById('hr').value)||300;
+  const kp=document.getElementById('kp').checked;
+  return {area,full,cut,small,vert,hor,per,t,ml,ll,hs,hl,hr,kp};
+}
+function tbars(rects,xs,ys,mx,my,hs,ml){
+  const inU=(x,y)=>rects.some(r=>x>r.x&&x<r.x+r.w&&y>r.y&&y<r.y+r.h);
+  const brk=v=>[...new Set(v.map(rd))].sort((a,b)=>a-b);
+  const yb=brk([...ys.map(v=>my+v),...rects.flatMap(r=>[r.y,r.y+r.h])]);
+  const xb=brk([...xs.map(v=>mx+v),...rects.flatMap(r=>[r.x,r.x+r.w])]);
+  const xi=xs.slice(1,-1);
+  const he=parseFloat(document.getElementById('he').value)||0;
+  const mainI=xi.filter((v,i)=>i%2===0),otherI=xi.filter((v,i)=>i%2===1);
+  let Lm=0,hang=0,mp=0,c4=0,c2=0;
+  mainI.forEach(px=>{
+    const X=mx+px;let run=0;
+    const fl=()=>{if(run>0.5){hang+=run-2*he>0?Math.ceil((run-2*he)/hs)+1:1;mp+=Math.ceil(run/ml);}run=0;};
+    for(let k=0;k<yb.length-1;k++){
+      const ym=(yb[k]+yb[k+1])/2;
+      if(inU(X-0.5,ym)&&inU(X+0.5,ym)){const d=yb[k+1]-yb[k];run+=d;Lm+=d;}else fl();
+    }
+    fl();
+  });
+  const ma=[mx+xs[0],...mainI.map(v=>mx+v),mx+xs[xs.length-1]];
+  ys.slice(1,-1).forEach(py=>{
+    const Y=my+py;
+    for(let i=0;i<ma.length-1;i++){
+      let ok=false;
+      for(let k=0;k<xb.length-1;k++){const xm=(xb[k]+xb[k+1])/2;if(xm>ma[i]&&xm<ma[i+1]&&inU(xm,Y-0.5)&&inU(xm,Y+0.5)){ok=true;break;}}
+      if(ok)c4++;
+    }
+  });
+  otherI.forEach(px=>{
+    const X=mx+px;
+    for(let j=0;j<ys.length-1;j++){
+      const a=my+ys[j],b=my+ys[j+1];let ok=false;
+      for(let k=0;k<yb.length-1;k++){const ym=(yb[k]+yb[k+1])/2;if(ym>a&&ym<b&&inU(X-0.5,ym)&&inU(X+0.5,ym)){ok=true;break;}}
+      if(ok)c2++;
+    }
+  });
+  return {Lm,hang,mp,c4,c2};
+}
+function matHTML(title,m){
+  const loss=parseFloat(document.getElementById('ls').value)||0;
+  const pair=Math.ceil(m.small/2),tot=m.full+m.cut+pair,buy=Math.ceil(tot*(1+loss/100)),A=m.area/10000;
+  let h='<div class="card"><h2>'+title+'</h2>';
+  h+='<div class="big"><span>面積</span><b>'+rd(A)+' m²（'+rd(A/3.3058)+' 坪）</b></div>';
+  h+='<div class="big"><span>整板</span><b>'+m.full+' 塊</b></div>';
+  h+='<div class="big"><span>需裁切的板</span><b>'+m.cut+' 塊</b></div>';
+  h+='<div class="big"><span>板材合計</span><b>'+tot+' 塊</b></div>';
+  h+='<div class="big"><span>含損耗 '+loss+'% 建議備料</span><b>'+buy+' 塊</b></div>';
+  h+='<div class="big"><span>　其中損耗餘量</span><b>'+(buy-tot)+' 塊</b></div>';
+  h+='<div class="big"><span>T 型骨總長</span><b>'+rd((m.vert+m.hor)/100)+' m</b></div>';
+  h+='<div class="big"><span>　縱向／橫向</span><b>'+rd(m.vert/100)+' ／ '+rd(m.hor/100)+' m</b></div>';
+  h+='<div class="big"><span>L 型牆邊角料</span><b>'+rd(m.per/100)+' m</b></div>';
+  h+='<div class="big"><span>T 型骨含損耗 '+loss+'%</span><b>'+rd((m.vert+m.hor)/100*(1+loss/100))+' m</b></div>';
+  h+='<div class="big"><span>L 型角料含損耗 '+loss+'%</span><b>'+rd(m.per/100*(1+loss/100))+' m</b></div>';
+  const cnt=n=>n+' 支（含損耗 '+Math.ceil(n*(1+loss/100))+' 支）';
+  h+='<h2 style="margin-top:14px">骨架與吊筋支數</h2>';
+  h+='<div class="big"><span>主骨（每支 '+m.ml+' cm）</span><b>'+cnt(m.t.mp)+'</b></div>';
+  h+='<div class="big"><span>副骨 4 尺</span><b>'+cnt(m.t.c4)+'</b></div>';
+  h+='<div class="big"><span>副骨 2 尺</span><b>'+cnt(m.t.c2)+'</b></div>';
+  h+='<div class="big"><span>L 型收邊（每支 '+m.ll+' cm）</span><b>'+cnt(Math.ceil(m.per/m.ll))+'</b></div>';
+  h+='<div class="big"><span>'+(m.kp?'吊筋':'吊筋成品')+'（間距 '+m.hs+' cm）</span><b>'+cnt(m.t.hang)+'</b></div>';
+  const pp=m.hl>0&&m.hr>=m.hl?Math.floor(m.hr/m.hl):0;
+  const rods=pp?Math.ceil(m.t.hang/pp):Math.ceil(m.t.hang*m.hl/m.hr);
+  if(m.kp)h+='<div class="big"><span>吊筋每支 '+m.hl+' cm，總長</span><b>'+rd(m.t.hang*m.hl/100)+' m</b></div>';
+  if(m.kp)h+='<div class="big"><span>原料每支 '+m.hr+' cm'+(pp?'，可切 '+pp+' 支':'')+'</span><b>'+cnt(rods)+'</b></div>';
+  if(m.kp)h+='<div class="big"><span>擊釘片</span><b>'+cnt(m.t.hang)+'</b></div>';
+  h+='<div class="note">主骨隔一條格線排一支（約 122 cm 一支），4 尺副骨橫跨兩格、接在主骨之間，2 尺副骨補在 4 尺之間。靠牆或邊板處的短副骨一律算 1 支。吊筋只算數量，長度依樓高自行決定。</div>';
+  h+='<div class="note">需裁切的板每個格子算 1 塊，凹角處若一塊板能切出兩片再自行扣減。骨架依格線計算，主骨、副骨的分法依廠商規格，吊筋與吊點另計。</div></div>';
+  return h;
+}
+function addSeg(){
+  const l=blocks[blocks.length-1];
+  blocks.push({id:nid++,n:'區塊'+nid,w:300,h:400,x:l?l.x+l.w:0,y:l?l.y:0});
+  build();draw();
+}
+function build(){
+  const el=document.getElementById('segs');
+  const lab={w:'寬',h:'高',x:'左距',y:'上距'};
+  el.innerHTML=blocks.map(b=>'<div class="seg" data-id="'+b.id+'" style="border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px"><div class="row" style="align-items:center"><div><input class="f" data-k="n" value="'+b.n.replace(/"/g,'&quot;').replace(/</g,'&lt;')+'" style="font-size:16px;padding:8px"></div><button class="rm" style="flex:none;width:40px;height:40px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);font-size:16px">✕</button></div><div class="row" style="margin-top:6px">'+['w','h','x','y'].map(k=>'<div><label style="margin:0 0 2px">'+lab[k]+' (cm)</label><input class="f" data-k="'+k+'" type="number" inputmode="decimal" value="'+b[k]+'" style="font-size:16px;padding:8px"></div>').join('')+'</div></div>').join('');
+  el.querySelectorAll('.seg').forEach(s=>{
+    const b=blocks.find(x=>String(x.id)===s.dataset.id);
+    s.querySelector('.rm').onclick=()=>{blocks=blocks.filter(x=>x!==b);build();draw();};
+    s.querySelectorAll('.f').forEach(f=>f.addEventListener('input',()=>{const k=f.dataset.k;b[k]=k==='n'?f.value:(parseFloat(f.value)||0);draw();}));
+  });
+}
+function sync(b){
+  const s=document.querySelector('.seg[data-id="'+b.id+'"]');if(!s)return;
+  ['x','y'].forEach(k=>{s.querySelector('[data-k="'+k+'"]').value=b[k];});
+}
+function runSegs(){draw();}
+function draw(){
+  const S=parseFloat(document.getElementById('s').value)||61;
+  const minE=parseFloat(document.getElementById('m').value)||0;
+  const maxE=parseFloat(document.getElementById('mx').value)||S;
+  const aw=document.getElementById('aw').checked,al=document.getElementById('al').checked;
+  const cv=document.getElementById('cv'),so=document.getElementById('segout');
+  const bs=blocks.filter(b=>b.w>0&&b.h>0);
+  if(!bs.length){cv.innerHTML='';so.innerHTML='';return;}
+  const minX=Math.min(...bs.map(b=>b.x)),minY=Math.min(...bs.map(b=>b.y));
+  const maxX=Math.max(...bs.map(b=>b.x+b.w)),maxY=Math.max(...bs.map(b=>b.y+b.h));
+  const W=maxX-minX,H=maxY-minY;
+  const v=view||{minX,minY,sc:Math.min(320/W,260/H)};
+  const T=(x,y)=>[20+(x-v.minX)*v.sc,20+(y-v.minY)*v.sc];
+  const xs=lines(W,S,minE,aw),ys=lines(H,S,minE,al);
+  let g='',rows={};
+  bs.forEach(b=>{
+    const [x1,y1]=T(b.x,b.y),w=b.w*v.sc,h=b.h*v.sc;
+    g+='<rect data-id="'+b.id+'" x="'+x1+'" y="'+y1+'" width="'+w+'" height="'+h+'" fill="var(--card)" stroke="var(--acc)" stroke-width="1.5" style="cursor:move"/>';
+    xs.forEach(p=>{const X=minX+p;if(X>b.x+0.01&&X<b.x+b.w-0.01){const a=T(X,0)[0];g+='<line x1="'+a+'" y1="'+y1+'" x2="'+a+'" y2="'+(y1+h)+'" stroke="var(--line)" pointer-events="none"/>';}});
+    ys.forEach(p=>{const Y=minY+p;if(Y>b.y+0.01&&Y<b.y+b.h-0.01){const a=T(0,Y)[1];g+='<line x1="'+x1+'" y1="'+a+'" x2="'+(x1+w)+'" y2="'+a+'" stroke="var(--line)" pointer-events="none"/>';}});
+    g+='<text x="'+(x1+w/2)+'" y="'+(y1+h/2)+'" text-anchor="middle" font-size="11" fill="var(--sub)" pointer-events="none">'+b.n.replace(/</g,'&lt;')+'</text>';
+  });
+  bs.forEach(b=>{
+    rows[b.id]=[];
+    const sides=[['左側','x',b.x,b.x-0.5,b.y+b.h/2,0],['右側','x',b.x+b.w,b.x+b.w+0.5,b.y+b.h/2,1],['上側','y',b.y,b.y-0.5,b.x+b.w/2,0],['下側','y',b.y+b.h,b.y+b.h+0.5,b.x+b.w/2,1]];
+    sides.forEach(([nm,ax,co,out,mid,hi])=>{
+      const px=ax==='x'?out:mid,py=ax==='x'?mid:out;
+      if(bs.some(o=>o!==b&&px>o.x&&px<o.x+o.w&&py>o.y&&py<o.y+o.h))return;
+      const X=co-(ax==='x'?minX:minY),l=loc(ax==='x'?xs:ys,X);
+      if(l.ex)return;
+      const piece=rd(hi?X-l.g:l.g2-X),bw=rd(l.g2-l.g);
+      let st,cls;
+      if(piece<minE){st='太小';cls='warn';}else if(piece>maxE){st='太大';cls='warn';}else{st='正常';cls='ok';}
+      rows[b.id].push({nm,piece,bw,st,cls});
+      const col=cls==='warn'?'var(--warn)':'var(--ok)',sw=cls==='warn'?4:2.5;
+      let s1,s2,tx,ty,an='middle';
+      if(ax==='x'){s1=T(co,b.y);s2=T(co,b.y+b.h);tx=s1[0]+(hi?-4:4);ty=(s1[1]+s2[1])/2;an=hi?'end':'start';}
+      else{s1=T(b.x,co);s2=T(b.x+b.w,co);tx=(s1[0]+s2[0])/2;ty=s1[1]+(hi?-5:12);}
+      g+='<line x1="'+s1[0]+'" y1="'+s1[1]+'" x2="'+s2[0]+'" y2="'+s2[1]+'" stroke="'+col+'" stroke-width="'+sw+'" pointer-events="none"/>';
+      g+='<text x="'+tx+'" y="'+ty+'" text-anchor="'+an+'" font-size="10" font-weight="600" fill="'+col+'" pointer-events="none">'+piece+'</text>';
+    });
+  });
+  cv.innerHTML=g;
+  let h='<div class="card"><h2>整體外框 '+rd(W)+' × '+rd(H)+' cm</h2>';
+  {const A=bs.reduce((s,b)=>s+b.w*b.h,0)/10000;h+='<div class="big"><span>實際天花板面積（各區塊加總）</span><b>'+rd(A)+' m²（'+rd(A/3.3058)+' 坪）</b></div>';}
+  if(W>=S&&H>=S){h+='<div class="note" style="margin-top:0">寬度方向邊板 '+calc(W,S,minE,aw).edge+' cm，長度方向邊板 '+calc(H,S,minE,al).edge+' cm（圖上數字為各牆靠牆板條寬，綠色正常、橘色需注意）。</div>';}
+  else h+='<div class="note warn">外框不足一塊整板。</div>';
+  h+='</div>';
+  h+=matHTML('材料用量（整體外框）',mat(bs,xs,ys,minX,minY,S));
+  bs.forEach(b=>{
+    const r=rows[b.id];
+    h+='<div class="card"><h2>'+b.n.replace(/</g,'&lt;')+'　'+b.w+' × '+b.h+' cm</h2>';
+    if(!r.length)h+='<div class="note ok">各外露牆面都剛好落在格線上，或與其他區塊相接。</div>';
+    r.forEach(x=>{h+='<div class="big"><span>'+x.nm+'靠牆板（原板 '+x.bw+'）</span><b class="'+x.cls+'">'+x.piece+' cm　'+x.st+'</b></div>';if(x.st==='太小')h+='<div class="note warn">'+x.nm+'：板條與旁邊整板合併再平分，兩塊各 '+rd((x.piece+S)/2)+' cm。</div>';});
+    h+='</div>';
+  });
+  so.innerHTML=h;
+}
+(function(){
+  const cv=document.getElementById('cv');
+  const pt=e=>{const p=cv.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(cv.getScreenCTM().inverse());};
+  cv.addEventListener('pointerdown',e=>{
+    const id=e.target.dataset&&e.target.dataset.id;if(!id)return;
+    const b=blocks.find(x=>String(x.id)===id);if(!b)return;
+    const bs=blocks.filter(x=>x.w>0&&x.h>0);
+    const minX=Math.min(...bs.map(x=>x.x)),minY=Math.min(...bs.map(x=>x.y));
+    const W=Math.max(...bs.map(x=>x.x+x.w))-minX,H=Math.max(...bs.map(x=>x.y+x.h))-minY;
+    view={minX,minY,sc:Math.min(320/W,260/H)};
+    const p=pt(e);drag={b,px:p.x,py:p.y,x0:b.x,y0:b.y};
+    cv.setPointerCapture(e.pointerId);
+  });
+  cv.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    const p=pt(e);
+    drag.b.x=Math.round((drag.x0+(p.x-drag.px)/view.sc)/5)*5;
+    drag.b.y=Math.round((drag.y0+(p.y-drag.py)/view.sc)/5)*5;
+    sync(drag.b);draw();
+  });
+  const end=()=>{if(drag){drag=null;view=null;draw();}};
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+})();
+['w','d','s','m','mx','ls','ml','ll','hs','hl','hr','he','md'].forEach(id=>document.getElementById(id).addEventListener('input',run));
+document.getElementById('aw').addEventListener('change',run);
+document.getElementById('al').addEventListener('change',run);
+document.getElementById('add').onclick=addSeg;
+document.getElementById('kp').addEventListener('change',()=>{document.querySelectorAll('.hx').forEach(e=>{e.style.display=document.getElementById('kp').checked?'':'none';});run();});
+addSeg();
+</script>
+</body>
+</html>
