@@ -40,8 +40,8 @@ h2{font-size:16px;margin:0 0 8px}
   <label>主骨方向</label>
   <select id="md" style="font-size:16px;padding:10px"><option value="v">沿長度方向（圖上下）</option><option value="h">沿寬度方向（圖左右）</option></select>
   <div class="row">
-    <div><label>主骨單支長 (cm)</label><input id="ml" type="number" inputmode="decimal" value="360" style="font-size:16px"></div>
-    <div><label>L 收邊單支長 (cm)</label><input id="ll" type="number" inputmode="decimal" value="300" style="font-size:16px"></div>
+    <div><label>主骨單支長 (cm)</label><input id="ml" type="number" inputmode="decimal" value="244" style="font-size:16px"></div>
+    <div><label>L 收邊單支長 (cm)</label><input id="ll" type="number" inputmode="decimal" value="244" style="font-size:16px"></div>
     <div><label>吊筋間距 (cm)</label><input id="hs" type="number" inputmode="decimal" value="90" style="font-size:16px"></div>
   </div>
   <label style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:15px;color:var(--text)"><input id="kp" type="checkbox" style="width:22px;height:22px;flex:none">使用擊釘片（自行裁切吊筋原料），不勾選則用材料行的吊筋成品</label>
@@ -144,7 +144,7 @@ function mat(rects,xs,ys,mx,my,S){
     [[0,b.x],[1,b.x+b.w]].forEach(([hi,c])=>{let len=b.h;rects.forEach(o=>{if(o===b)return;const ed=hi?o.x:o.x+o.w;if(Math.abs(ed-c)<e){const ov=Math.min(b.y+b.h,o.y+o.h)-Math.max(b.y,o.y);if(ov>0)len-=ov;}});per+=Math.max(len,0);});
     [[0,b.y],[1,b.y+b.h]].forEach(([hi,c])=>{let len=b.w;rects.forEach(o=>{if(o===b)return;const ed=hi?o.y:o.y+o.h;if(Math.abs(ed-c)<e){const ov=Math.min(b.x+b.w,o.x+o.w)-Math.max(b.x,o.x);if(ov>0)len-=ov;}});per+=Math.max(len,0);});
   });
-  const ml=parseFloat(document.getElementById('ml').value)||360,ll=parseFloat(document.getElementById('ll').value)||300,hs=parseFloat(document.getElementById('hs').value)||90;
+  const ml=parseFloat(document.getElementById('ml').value)||244,ll=parseFloat(document.getElementById('ll').value)||244,hs=parseFloat(document.getElementById('hs').value)||90;
   const t=document.getElementById('md').value==='h'?tbars(rects.map(r=>({x:r.y,y:r.x,w:r.h,h:r.w})),ys,xs,my,mx,hs,ml):tbars(rects,xs,ys,mx,my,hs,ml);
   const hl=parseFloat(document.getElementById('hl').value)||0,hr=parseFloat(document.getElementById('hr').value)||300;
   const kp=document.getElementById('kp').checked;
