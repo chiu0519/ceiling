@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>輕鋼架天花板計算</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1d2330;--mut:#6b7385;--bd:#dfe3ea;--ac:#2b6cb0;box-sizing:border-box}
+@media (prefers-color-scheme:dark){:root{--bg:#14171d;--card:#1d222b;--tx:#e8ebf1;--mut:#9aa3b5;--bd:#2d3441;--ac:#63a4ee}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg)}
+.tabs{position:sticky;top:0;z-index:10;display:flex;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;background:var(--bg);border-bottom:1px solid var(--bd)}
+.tabs button{flex:1;padding:11px 8px;font-size:16px;font-weight:600;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--mut);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif}
+.tabs button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+iframe{display:none;width:100%;height:600px;border:0;background:var(--bg)}
+iframe.on{display:block}
+</style>
+</head>
+<body>
+<div class="tabs">
+<button id="t-mj" type="button">明架計算</button>
+<button id="t-an" type="button">暗架計算</button>
+</div>
+<iframe id="f-mj" allow="clipboard-write"></iframe>
+<iframe id="f-an" allow="clipboard-write"></iframe>
+
+<script type="text/plain" id="src-mj"><!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>明架天花板分邊計算</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1d2330;--sub:#6b7380;--line:#dfe3ea;--acc:#2f6fed;--ok:#1a7f4b;--warn:#b45309;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171c;--card:#1e222a;--text:#e8ebf0;--sub:#98a1af;--line:#323844;--acc:#6d9bff;--ok:#4cc38a;--warn:#f0a95a}}
+:root[data-theme="dark"]{--bg:#14171c;--card:#1e222a;--text:#e8ebf0;--sub:#98a1af;--line:#323844;--acc:#6d9bff;--ok:#4cc38a;--warn:#f0a95a}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;padding:16px;max-width:520px;margin:0 auto}
+h1{font-size:20px;margin:8px 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+label{display:block;font-size:13px;color:var(--sub);margin:8px 0 4px}
+input,select{width:100%;box-sizing:border-box;font-size:20px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
+.row{display:flex;gap:10px}.row>div{flex:1}
+h2{font-size:16px;margin:0 0 8px}
+.big{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:15px}
+.big b{font-size:18px;color:var(--acc)}
+.note{font-size:13px;color:var(--sub);margin-top:8px;line-height:1.5}
+.warn{color:var(--warn)}.ok{color:var(--ok)}
+.bar{display:flex;height:26px;margin-top:10px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.bar div{display:flex;align-items:center;justify-content:center;font-size:11px;border-right:1px solid var(--line);color:var(--text)}
+.e{background:var(--acc);color:#fff!important}.m{background:var(--bg)}.l{background:#f5c542;color:#222!important}
+</style>
+</head>
+<body>
+<h1>明架天花板分邊計算</h1>
+<div class="card">
+  <div class="row">
+    <div><label>房間寬度 (cm)</label><input id="w" type="number" inputmode="decimal" placeholder="例：400"></div>
+    <div><label>房間長度 (cm)</label><input id="d" type="number" inputmode="decimal" placeholder="例：520"></div>
+  </div>
+  <label>板子尺寸 (cm)，預設 61</label>
+  <input id="s" type="number" inputmode="decimal" value="61">
+  <label>邊板最小寬度警示 (cm)</label>
+  <input id="m" type="number" inputmode="decimal" value="15">
+  <label>板材損耗 (%)</label>
+  <input id="ls" type="number" inputmode="decimal" value="5">
+  <label>主骨方向</label>
+  <select id="md" style="font-size:16px;padding:10px"><option value="v">沿長度方向（圖上下）</option><option value="h">沿寬度方向（圖左右）</option></select>
+  <div class="row">
+    <div><label>主骨單支長 (cm)</label><input id="ml" type="number" inputmode="decimal" value="244" style="font-size:16px"></div>
+    <div><label>L 收邊單支長 (cm)</label><input id="ll" type="number" inputmode="decimal" value="244" style="font-size:16px"></div>
+    <div><label>吊筋間距 (cm)</label><input id="hs" type="number" inputmode="decimal" value="90" style="font-size:16px"></div>
+  </div>
+  <label style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:15px;color:var(--text)"><input id="kp" type="checkbox" style="width:22px;height:22px;flex:none">使用擊釘片（自行裁切吊筋原料），不勾選則用材料行的吊筋成品</label>
+  <div class="row">
+    <div class="hx" style="display:none"><label>每支吊筋所需長度 (cm)</label><input id="hl" type="number" inputmode="decimal" value="60" style="font-size:16px"></div>
+    <div class="hx" style="display:none"><label>吊筋原料單支長 (cm)</label><input id="hr" type="number" inputmode="decimal" value="300" style="font-size:16px"></div>
+    <div><label>靠牆頭尾吊筋距牆 (cm)</label><input id="he" type="number" inputmode="decimal" value="30" style="font-size:16px"></div>
+  </div>
+  <label style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:15px;color:var(--text)"><input id="aw" type="checkbox" checked style="width:22px;height:22px;flex:none">寬度方向：整板為雙數時，加一整板再分邊（中間留單數塊放燈）</label>
+  <label style="display:flex;align-items:center;gap:10px;margin-top:10px;font-size:15px;color:var(--text)"><input id="al" type="checkbox" checked style="width:22px;height:22px;flex:none">長度方向：整板為雙數時，加一整板再分邊（中間留單數塊放燈）</label>
+</div>
+<div id="out"></div>
+<div class="card"><h2>排列圖型（不規則房間）</h2>
+<div class="note" style="margin:0 0 8px">用區塊拼出房間形狀：直接拖曳區塊移動（5 cm 吸附），再到下方填各區塊的寬、高、位置。格線以整體外框左上角為基準，依外框寬、高分邊；上方「房間寬度、長度」不影響這裡。</div>
+<svg id="cv" viewBox="0 0 360 300" style="width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;touch-action:none"></svg>
+<label>板條太大警示 (cm)</label><input id="mx" type="number" inputmode="decimal" value="50">
+<div id="segs" style="margin-top:12px"></div>
+<button id="add" style="width:100%;padding:12px;font-size:16px;border:1px dashed var(--acc);border-radius:10px;background:transparent;color:var(--acc)">＋ 新增區塊</button></div>
+<div id="segout"></div>
+<script>
+function calc(total,S,minE,adj){
+  const n=Math.floor(total/S+1e-9);
+  const r=Math.round((total-n*S)*100)/100;
+  let edge,mid,even=(n%2===0);
+  if(even&&adj){edge=(r+S)/2;mid=n-1;}else{edge=r/2;mid=n;}
+  let tip='';
+  if(edge>0&&edge<minE){
+    const n2=n-1,r2=total-n2*S;
+    let e2,m2;
+    if(n2%2===0&&adj){e2=(r2+S)/2;m2=n2-1;}else{e2=r2/2;m2=n2;}
+    tip='邊板偏窄，可改成少 1 塊整板重算：邊板 '+(Math.round(e2*100)/100)+' cm，中間 '+m2+' 塊整板。';
+  }
+  return {n,r,even,edge:Math.round(edge*100)/100,mid,tip};
+}
+function card(title,total,S,minE,adj){
+  const c=calc(total,S,minE,adj);
+  const chk=Math.round((c.edge*2+c.mid*S)*100)/100;
+  let h='<div class="card"><h2>'+title+' '+total+' cm</h2>';
+  h+='<div class="big"><span>整板數</span><b>'+c.n+'（'+(c.even?'雙數':'單數')+'）</b></div>';
+  h+='<div class="big"><span>餘數</span><b>'+c.r+' cm</b></div>';
+  h+='<div class="big"><span>兩側邊板（各）</span><b>'+c.edge+' cm</b></div>';
+  h+='<div class="big"><span>中間整板數</span><b>'+c.mid+' 塊</b></div>';
+  h+='<div class="note">'+(c.even?(adj?'整板為雙數：邊板 = (餘數 + '+S+') ÷ 2，中間減 1 塊，使中間為單數可置中放燈。':'整板為雙數（未加整板）：邊板 = 餘數 ÷ 2，中間為雙數塊，正中央是接縫。'):'整板為單數：邊板 = 餘數 ÷ 2，中間單數塊可置中放燈。')+'</div>';
+  h+='<div class="note '+(chk===total?'ok':'warn')+'">檢查：'+c.edge+'×2 + '+c.mid+'×'+S+' = '+chk+(chk===total?' ✓':' ✗')+'</div>';
+  if(c.tip)h+='<div class="note warn">'+c.tip+'</div>';
+  if(c.edge===0)h+='<div class="note">剛好整除，不需要邊板。</div>';
+  const edgeW=c.edge/total*100,midW=S/total*100;
+  h+='<div class="bar">';
+  if(c.edge>0)h+='<div class="e" style="width:'+edgeW+'%"></div>';
+  for(let i=0;i<c.mid;i++){h+='<div class="'+((c.mid%2===1&&i===(c.mid-1)/2)?'l':'m')+'" style="width:'+midW+'%">'+((c.mid%2===1&&i===(c.mid-1)/2)?'燈':'')+'</div>';}
+  if(c.edge>0)h+='<div class="e" style="width:'+edgeW+'%"></div>';
+  h+='</div></div>';
+  return h;
+}
+function run(){
+  const S=parseFloat(document.getElementById('s').value)||61;
+  const minE=parseFloat(document.getElementById('m').value)||0;
+  const aw=document.getElementById('aw').checked,al=document.getElementById('al').checked;
+  const w=parseFloat(document.getElementById('w').value);
+  const d=parseFloat(document.getElementById('d').value);
+  let h='';
+  if(w>=S)h+=card('寬度',w,S,minE,aw);
+  if(d>=S)h+=card('長度',d,S,minE,al);
+  if(w>=S&&d>=S)h+=matHTML('材料用量（寬 × 長）',mat([{x:0,y:0,w:w,h:d}],lines(w,S,minE,aw),lines(d,S,minE,al),0,0,S));
+  document.getElementById('out').innerHTML=h;
+  runSegs();
+}
+let blocks=[],view=null,drag=null,nid=1;
+const rd=x=>Math.round(x*100)/100;
+function lines(total,S,minE,adj){
+  if(total<S)return [0,total];
+  const c=calc(total,S,minE,adj),pts=[0];
+  for(let k=0;k<=c.mid;k++){const v=rd(c.edge+k*S);if(v>pts[pts.length-1]+0.01&&v<total-0.01)pts.push(v);}
+  pts.push(total);return pts;
+}
+function loc(pts,X){
+  for(const p of pts)if(Math.abs(p-X)<0.01)return{ex:true};
+  let g=0,g2=pts[pts.length-1];
+  for(const p of pts){if(p<X)g=p;else{g2=p;break;}}
+  return{g,g2,ex:false};
+}
+function mat(rects,xs,ys,mx,my,S){
+  const e=0.01;
+  const inU=(x,y)=>rects.some(r=>x>r.x&&x<r.x+r.w&&y>r.y&&y<r.y+r.h);
+  let area=0,full=0,cut=0,small=0,vert=0,hor=0,per=0;
+  const thr=0;
+  rects.forEach(r=>{area+=r.w*r.h;});
+  for(let i=0;i<xs.length-1;i++)for(let j=0;j<ys.length-1;j++){
+    const x0=mx+xs[i],x1=mx+xs[i+1],y0=my+ys[j],y1=my+ys[j+1];
+    let a=0,bx0=1e9,bx1=-1e9,by0=1e9,by1=-1e9;
+    rects.forEach(r=>{const w=Math.min(x1,r.x+r.w)-Math.max(x0,r.x),h=Math.min(y1,r.y+r.h)-Math.max(y0,r.y);if(w>0&&h>0){a+=w*h;bx0=Math.min(bx0,Math.max(x0,r.x));bx1=Math.max(bx1,Math.min(x1,r.x+r.w));by0=Math.min(by0,Math.max(y0,r.y));by1=Math.max(by1,Math.min(y1,r.y+r.h));}});
+    if(a>=0.5){if(a>(x1-x0)*(y1-y0)-0.5&&Math.abs(x1-x0-S)<e&&Math.abs(y1-y0-S)<e)full++;else if(Math.min(bx1-bx0,by1-by0)<thr)small++;else cut++;}
+  }
+  const brk=v=>[...new Set(v.map(rd))].sort((a,b)=>a-b);
+  const yb=brk([...ys.map(v=>my+v),...rects.flatMap(r=>[r.y,r.y+r.h])]);
+  const xb=brk([...xs.map(v=>mx+v),...rects.flatMap(r=>[r.x,r.x+r.w])]);
+  xs.forEach(px=>{const X=mx+px;for(let k=0;k<yb.length-1;k++){const ym=(yb[k]+yb[k+1])/2;if(inU(X-0.5,ym)&&inU(X+0.5,ym))vert+=yb[k+1]-yb[k];}});
+  ys.forEach(py=>{const Y=my+py;for(let k=0;k<xb.length-1;k++){const xm=(xb[k]+xb[k+1])/2;if(inU(xm,Y-0.5)&&inU(xm,Y+0.5))hor+=xb[k+1]-xb[k];}});
+  rects.forEach(b=>{
+    [[0,b.x],[1,b.x+b.w]].forEach(([hi,c])=>{let len=b.h;rects.forEach(o=>{if(o===b)return;const ed=hi?o.x:o.x+o.w;if(Math.abs(ed-c)<e){const ov=Math.min(b.y+b.h,o.y+o.h)-Math.max(b.y,o.y);if(ov>0)len-=ov;}});per+=Math.max(len,0);});
+    [[0,b.y],[1,b.y+b.h]].forEach(([hi,c])=>{let len=b.w;rects.forEach(o=>{if(o===b)return;const ed=hi?o.y:o.y+o.h;if(Math.abs(ed-c)<e){const ov=Math.min(b.x+b.w,o.x+o.w)-Math.max(b.x,o.x);if(ov>0)len-=ov;}});per+=Math.max(len,0);});
+  });
+  const ml=parseFloat(document.getElementById('ml').value)||244,ll=parseFloat(document.getElementById('ll').value)||244,hs=parseFloat(document.getElementById('hs').value)||90;
+  const t=document.getElementById('md').value==='h'?tbars(rects.map(r=>({x:r.y,y:r.x,w:r.h,h:r.w})),ys,xs,my,mx,hs,ml):tbars(rects,xs,ys,mx,my,hs,ml);
+  const hl=parseFloat(document.getElementById('hl').value)||0,hr=parseFloat(document.getElementById('hr').value)||300;
+  const kp=document.getElementById('kp').checked;
+  return {area,full,cut,small,vert,hor,per,t,ml,ll,hs,hl,hr,kp};
+}
+function tbars(rects,xs,ys,mx,my,hs,ml){
+  const inU=(x,y)=>rects.some(r=>x>r.x&&x<r.x+r.w&&y>r.y&&y<r.y+r.h);
+  const brk=v=>[...new Set(v.map(rd))].sort((a,b)=>a-b);
+  const yb=brk([...ys.map(v=>my+v),...rects.flatMap(r=>[r.y,r.y+r.h])]);
+  const xb=brk([...xs.map(v=>mx+v),...rects.flatMap(r=>[r.x,r.x+r.w])]);
+  const xi=xs.slice(1,-1);
+  const he=parseFloat(document.getElementById('he').value)||0;
+  const mainI=xi.filter((v,i)=>i%2===0),otherI=xi.filter((v,i)=>i%2===1);
+  let Lm=0,hang=0,mp=0,c4=0,c2=0;
+  mainI.forEach(px=>{
+    const X=mx+px;let run=0;
+    const fl=()=>{if(run>0.5){hang+=run-2*he>0?Math.ceil((run-2*he)/hs)+1:1;mp+=Math.ceil(run/ml);}run=0;};
+    for(let k=0;k<yb.length-1;k++){
+      const ym=(yb[k]+yb[k+1])/2;
+      if(inU(X-0.5,ym)&&inU(X+0.5,ym)){const d=yb[k+1]-yb[k];run+=d;Lm+=d;}else fl();
+    }
+    fl();
+  });
+  const ma=[mx+xs[0],...mainI.map(v=>mx+v),mx+xs[xs.length-1]];
+  ys.slice(1,-1).forEach(py=>{
+    const Y=my+py;
+    for(let i=0;i<ma.length-1;i++){
+      let ok=false;
+      for(let k=0;k<xb.length-1;k++){const xm=(xb[k]+xb[k+1])/2;if(xm>ma[i]&&xm<ma[i+1]&&inU(xm,Y-0.5)&&inU(xm,Y+0.5)){ok=true;break;}}
+      if(ok)c4++;
+    }
+  });
+  otherI.forEach(px=>{
+    const X=mx+px;
+    for(let j=0;j<ys.length-1;j++){
+      const a=my+ys[j],b=my+ys[j+1];let ok=false;
+      for(let k=0;k<yb.length-1;k++){const ym=(yb[k]+yb[k+1])/2;if(ym>a&&ym<b&&inU(X-0.5,ym)&&inU(X+0.5,ym)){ok=true;break;}}
+      if(ok)c2++;
+    }
+  });
+  return {Lm,hang,mp,c4,c2};
+}
+function matHTML(title,m){
+  const loss=parseFloat(document.getElementById('ls').value)||0;
+  const pair=Math.ceil(m.small/2),tot=m.full+m.cut+pair,buy=Math.ceil(tot*(1+loss/100)),A=m.area/10000;
+  let h='<div class="card"><h2>'+title+'</h2>';
+  h+='<div class="big"><span>面積</span><b>'+rd(A)+' m²（'+rd(A/3.3058)+' 坪）</b></div>';
+  h+='<div class="big"><span>整板</span><b>'+m.full+' 塊</b></div>';
+  h+='<div class="big"><span>需裁切的板</span><b>'+m.cut+' 塊</b></div>';
+  h+='<div class="big"><span>板材合計</span><b>'+tot+' 塊</b></div>';
+  h+='<div class="big"><span>含損耗 '+loss+'% 建議備料</span><b>'+buy+' 塊</b></div>';
+  h+='<div class="big"><span>　其中損耗餘量</span><b>'+(buy-tot)+' 塊</b></div>';
+  h+='<div class="big"><span>T 型骨總長</span><b>'+rd((m.vert+m.hor)/100)+' m</b></div>';
+  h+='<div class="big"><span>　縱向／橫向</span><b>'+rd(m.vert/100)+' ／ '+rd(m.hor/100)+' m</b></div>';
+  h+='<div class="big"><span>L 型牆邊角料</span><b>'+rd(m.per/100)+' m</b></div>';
+  h+='<div class="big"><span>T 型骨含損耗 '+loss+'%</span><b>'+rd((m.vert+m.hor)/100*(1+loss/100))+' m</b></div>';
+  h+='<div class="big"><span>L 型角料含損耗 '+loss+'%</span><b>'+rd(m.per/100*(1+loss/100))+' m</b></div>';
+  const cnt=n=>n+' 支（含損耗 '+Math.ceil(n*(1+loss/100))+' 支）';
+  h+='<h2 style="margin-top:14px">骨架與吊筋支數</h2>';
+  h+='<div class="big"><span>主骨（每支 '+m.ml+' cm）</span><b>'+cnt(m.t.mp)+'</b></div>';
+  h+='<div class="big"><span>副骨 4 尺</span><b>'+cnt(m.t.c4)+'</b></div>';
+  h+='<div class="big"><span>副骨 2 尺</span><b>'+cnt(m.t.c2)+'</b></div>';
+  h+='<div class="big"><span>L 型收邊（每支 '+m.ll+' cm）</span><b>'+cnt(Math.ceil(m.per/m.ll))+'</b></div>';
+  h+='<div class="big"><span>'+(m.kp?'吊筋':'吊筋成品')+'（間距 '+m.hs+' cm）</span><b>'+cnt(m.t.hang)+'</b></div>';
+  const pp=m.hl>0&&m.hr>=m.hl?Math.floor(m.hr/m.hl):0;
+  const rods=pp?Math.ceil(m.t.hang/pp):Math.ceil(m.t.hang*m.hl/m.hr);
+  if(m.kp)h+='<div class="big"><span>吊筋每支 '+m.hl+' cm，總長</span><b>'+rd(m.t.hang*m.hl/100)+' m</b></div>';
+  if(m.kp)h+='<div class="big"><span>原料每支 '+m.hr+' cm'+(pp?'，可切 '+pp+' 支':'')+'</span><b>'+cnt(rods)+'</b></div>';
+  if(m.kp)h+='<div class="big"><span>擊釘片</span><b>'+cnt(m.t.hang)+'</b></div>';
+  h+='<div class="note">主骨隔一條格線排一支（約 122 cm 一支），4 尺副骨橫跨兩格、接在主骨之間，2 尺副骨補在 4 尺之間。靠牆或邊板處的短副骨一律算 1 支。吊筋只算數量，長度依樓高自行決定。</div>';
+  h+='<div class="note">需裁切的板每個格子算 1 塊，凹角處若一塊板能切出兩片再自行扣減。骨架依格線計算，主骨、副骨的分法依廠商規格，吊筋與吊點另計。</div></div>';
+  return h;
+}
+function addSeg(){
+  const l=blocks[blocks.length-1];
+  blocks.push({id:nid++,n:'區塊'+nid,w:300,h:400,x:l?l.x+l.w:0,y:l?l.y:0});
+  build();draw();
+}
+function build(){
+  const el=document.getElementById('segs');
+  const lab={w:'寬',h:'高',x:'左距',y:'上距'};
+  el.innerHTML=blocks.map(b=>'<div class="seg" data-id="'+b.id+'" style="border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px"><div class="row" style="align-items:center"><div><input class="f" data-k="n" value="'+b.n.replace(/"/g,'&quot;').replace(/</g,'&lt;')+'" style="font-size:16px;padding:8px"></div><button class="rm" style="flex:none;width:40px;height:40px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);font-size:16px">✕</button></div><div class="row" style="margin-top:6px">'+['w','h','x','y'].map(k=>'<div><label style="margin:0 0 2px">'+lab[k]+' (cm)</label><input class="f" data-k="'+k+'" type="number" inputmode="decimal" value="'+b[k]+'" style="font-size:16px;padding:8px"></div>').join('')+'</div></div>').join('');
+  el.querySelectorAll('.seg').forEach(s=>{
+    const b=blocks.find(x=>String(x.id)===s.dataset.id);
+    s.querySelector('.rm').onclick=()=>{blocks=blocks.filter(x=>x!==b);build();draw();};
+    s.querySelectorAll('.f').forEach(f=>f.addEventListener('input',()=>{const k=f.dataset.k;b[k]=k==='n'?f.value:(parseFloat(f.value)||0);draw();}));
+  });
+}
+function sync(b){
+  const s=document.querySelector('.seg[data-id="'+b.id+'"]');if(!s)return;
+  ['x','y'].forEach(k=>{s.querySelector('[data-k="'+k+'"]').value=b[k];});
+}
+function runSegs(){draw();}
+function draw(){
+  const S=parseFloat(document.getElementById('s').value)||61;
+  const minE=parseFloat(document.getElementById('m').value)||0;
+  const maxE=parseFloat(document.getElementById('mx').value)||S;
+  const aw=document.getElementById('aw').checked,al=document.getElementById('al').checked;
+  const cv=document.getElementById('cv'),so=document.getElementById('segout');
+  const bs=blocks.filter(b=>b.w>0&&b.h>0);
+  if(!bs.length){cv.innerHTML='';so.innerHTML='';return;}
+  const minX=Math.min(...bs.map(b=>b.x)),minY=Math.min(...bs.map(b=>b.y));
+  const maxX=Math.max(...bs.map(b=>b.x+b.w)),maxY=Math.max(...bs.map(b=>b.y+b.h));
+  const W=maxX-minX,H=maxY-minY;
+  const v=view||{minX,minY,sc:Math.min(320/W,260/H)};
+  const T=(x,y)=>[20+(x-v.minX)*v.sc,20+(y-v.minY)*v.sc];
+  const xs=lines(W,S,minE,aw),ys=lines(H,S,minE,al);
+  let g='',rows={};
+  bs.forEach(b=>{
+    const [x1,y1]=T(b.x,b.y),w=b.w*v.sc,h=b.h*v.sc;
+    g+='<rect data-id="'+b.id+'" x="'+x1+'" y="'+y1+'" width="'+w+'" height="'+h+'" fill="var(--card)" stroke="var(--acc)" stroke-width="1.5" style="cursor:move"/>';
+    xs.forEach(p=>{const X=minX+p;if(X>b.x+0.01&&X<b.x+b.w-0.01){const a=T(X,0)[0];g+='<line x1="'+a+'" y1="'+y1+'" x2="'+a+'" y2="'+(y1+h)+'" stroke="var(--line)" pointer-events="none"/>';}});
+    ys.forEach(p=>{const Y=minY+p;if(Y>b.y+0.01&&Y<b.y+b.h-0.01){const a=T(0,Y)[1];g+='<line x1="'+x1+'" y1="'+a+'" x2="'+(x1+w)+'" y2="'+a+'" stroke="var(--line)" pointer-events="none"/>';}});
+    g+='<text x="'+(x1+w/2)+'" y="'+(y1+h/2)+'" text-anchor="middle" font-size="11" fill="var(--sub)" pointer-events="none">'+b.n.replace(/</g,'&lt;')+'</text>';
+  });
+  bs.forEach(b=>{
+    rows[b.id]=[];
+    const sides=[['左側','x',b.x,b.x-0.5,b.y+b.h/2,0],['右側','x',b.x+b.w,b.x+b.w+0.5,b.y+b.h/2,1],['上側','y',b.y,b.y-0.5,b.x+b.w/2,0],['下側','y',b.y+b.h,b.y+b.h+0.5,b.x+b.w/2,1]];
+    sides.forEach(([nm,ax,co,out,mid,hi])=>{
+      const px=ax==='x'?out:mid,py=ax==='x'?mid:out;
+      if(bs.some(o=>o!==b&&px>o.x&&px<o.x+o.w&&py>o.y&&py<o.y+o.h))return;
+      const X=co-(ax==='x'?minX:minY),l=loc(ax==='x'?xs:ys,X);
+      if(l.ex)return;
+      const piece=rd(hi?X-l.g:l.g2-X),bw=rd(l.g2-l.g);
+      let st,cls;
+      if(piece<minE){st='太小';cls='warn';}else if(piece>maxE){st='太大';cls='warn';}else{st='正常';cls='ok';}
+      rows[b.id].push({nm,piece,bw,st,cls});
+      const col=cls==='warn'?'var(--warn)':'var(--ok)',sw=cls==='warn'?4:2.5;
+      let s1,s2,tx,ty,an='middle';
+      if(ax==='x'){s1=T(co,b.y);s2=T(co,b.y+b.h);tx=s1[0]+(hi?-4:4);ty=(s1[1]+s2[1])/2;an=hi?'end':'start';}
+      else{s1=T(b.x,co);s2=T(b.x+b.w,co);tx=(s1[0]+s2[0])/2;ty=s1[1]+(hi?-5:12);}
+      g+='<line x1="'+s1[0]+'" y1="'+s1[1]+'" x2="'+s2[0]+'" y2="'+s2[1]+'" stroke="'+col+'" stroke-width="'+sw+'" pointer-events="none"/>';
+      g+='<text x="'+tx+'" y="'+ty+'" text-anchor="'+an+'" font-size="10" font-weight="600" fill="'+col+'" pointer-events="none">'+piece+'</text>';
+    });
+  });
+  cv.innerHTML=g;
+  let h='<div class="card"><h2>整體外框 '+rd(W)+' × '+rd(H)+' cm</h2>';
+  {const A=bs.reduce((s,b)=>s+b.w*b.h,0)/10000;h+='<div class="big"><span>實際天花板面積（各區塊加總）</span><b>'+rd(A)+' m²（'+rd(A/3.3058)+' 坪）</b></div>';}
+  if(W>=S&&H>=S){h+='<div class="note" style="margin-top:0">寬度方向邊板 '+calc(W,S,minE,aw).edge+' cm，長度方向邊板 '+calc(H,S,minE,al).edge+' cm（圖上數字為各牆靠牆板條寬，綠色正常、橘色需注意）。</div>';}
+  else h+='<div class="note warn">外框不足一塊整板。</div>';
+  h+='</div>';
+  h+=matHTML('材料用量（整體外框）',mat(bs,xs,ys,minX,minY,S));
+  bs.forEach(b=>{
+    const r=rows[b.id];
+    h+='<div class="card"><h2>'+b.n.replace(/</g,'&lt;')+'　'+b.w+' × '+b.h+' cm</h2>';
+    if(!r.length)h+='<div class="note ok">各外露牆面都剛好落在格線上，或與其他區塊相接。</div>';
+    r.forEach(x=>{h+='<div class="big"><span>'+x.nm+'靠牆板（原板 '+x.bw+'）</span><b class="'+x.cls+'">'+x.piece+' cm　'+x.st+'</b></div>';if(x.st==='太小')h+='<div class="note warn">'+x.nm+'：板條與旁邊整板合併再平分，兩塊各 '+rd((x.piece+S)/2)+' cm。</div>';});
+    h+='</div>';
+  });
+  so.innerHTML=h;
+}
+(function(){
+  const cv=document.getElementById('cv');
+  const pt=e=>{const p=cv.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(cv.getScreenCTM().inverse());};
+  cv.addEventListener('pointerdown',e=>{
+    const id=e.target.dataset&&e.target.dataset.id;if(!id)return;
+    const b=blocks.find(x=>String(x.id)===id);if(!b)return;
+    const bs=blocks.filter(x=>x.w>0&&x.h>0);
+    const minX=Math.min(...bs.map(x=>x.x)),minY=Math.min(...bs.map(x=>x.y));
+    const W=Math.max(...bs.map(x=>x.x+x.w))-minX,H=Math.max(...bs.map(x=>x.y+x.h))-minY;
+    view={minX,minY,sc:Math.min(320/W,260/H)};
+    const p=pt(e);drag={b,px:p.x,py:p.y,x0:b.x,y0:b.y};
+    cv.setPointerCapture(e.pointerId);
+  });
+  cv.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    const p=pt(e);
+    drag.b.x=Math.round((drag.x0+(p.x-drag.px)/view.sc)/5)*5;
+    drag.b.y=Math.round((drag.y0+(p.y-drag.py)/view.sc)/5)*5;
+    sync(drag.b);draw();
+  });
+  const end=()=>{if(drag){drag=null;view=null;draw();}};
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+})();
+['w','d','s','m','mx','ls','ml','ll','hs','hl','hr','he','md'].forEach(id=>document.getElementById(id).addEventListener('input',run));
+document.getElementById('aw').addEventListener('change',run);
+document.getElementById('al').addEventListener('change',run);
+document.getElementById('add').onclick=addSeg;
+document.getElementById('kp').addEventListener('change',()=>{document.querySelectorAll('.hx').forEach(e=>{e.style.display=document.getElementById('kp').checked?'':'none';});run();});
+addSeg();
+<\/script>
+</body>
+</html>
+</script>
+<script type="text/plain" id="src-an"><!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>輕鋼架暗架材料計算</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1d2330;--mut:#6b7385;--bd:#dfe3ea;--ac:#2b6cb0;--warn:#c05621;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171d;--card:#1d222b;--tx:#e8ebf1;--mut:#9aa3b5;--bd:#2d3441;--ac:#63a4ee;--warn:#f6ad55}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 -apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;padding:14px}
+h1{font-size:19px;margin:4px 0 12px}
+h2{font-size:15px;margin:0 0 10px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;font-size:12.5px;color:var(--mut)}
+input,select{width:100%;margin-top:3px;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font-size:16px}
+.chk{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13.5px;color:var(--tx)}
+.chk input{width:auto;margin:0}
+button{border:1px solid var(--ac);background:transparent;color:var(--ac);border-radius:8px;padding:8px 12px;font-size:14px}
+button.del{border-color:var(--warn);color:var(--warn)}
+.hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
+.hd input{margin:0;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:6px 4px;border-bottom:1px solid var(--bd);text-align:left}
+th{color:var(--mut);font-weight:500;font-size:12.5px}
+td.n,th.n{text-align:right}
+.big{font-size:22px;font-weight:700;color:var(--ac)}
+.note{font-size:12.5px;color:var(--mut);margin-top:8px}
+.warn{color:var(--warn);font-size:13px;margin-top:6px}
+.wrap{overflow-x:auto}
+.tag{display:inline-block;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:1px 6px;margin:2px 3px 2px 0;font-size:12.5px}
+svg{width:100%;max-height:340px;display:block;touch-action:none;user-select:none;-webkit-user-select:none}svg [data-r]{cursor:grab}svg line{vector-effect:non-scaling-stroke;stroke:var(--warn);stroke-width:1.5;stroke-dasharray:5 4}
+</style>
+</head>
+<body>
+<h1>輕鋼架暗架材料計算</h1>
+
+<div class="card">
+<h2>天花板區域（單位：公分）</h2>
+<div class="note" style="margin:0 0 10px">每個矩形是一個區域，用「X、Y 位置」（左上角座標）把區域拼成 L 型、T 型等形狀。長度＝X 方向，寬度＝Y 方向。相鄰區域貼齊時，中間的牆不會算七字。</div>
+<div class="card" style="background:var(--bg)">
+<h2 style="margin-bottom:6px">匯入設計圖資料</h2>
+<div class="note" style="margin:0 0 8px">① 按「複製提示詞」 ② 到 Claude 貼上提示詞並附上設計圖 ③ 把 Claude 回覆的資料貼到下方，按「匯入」</div>
+<button id="cpPrompt">複製提示詞</button>
+<textarea id="impTxt" rows="5" placeholder="貼上 Claude 回覆的資料" style="width:100%;margin-top:8px;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font-size:14px"></textarea>
+<button id="impGo" style="margin-top:8px">匯入並建立區域</button>
+<div id="impMsg" class="note"></div>
+</div>
+<div class="card" id="aiCard" hidden style="background:var(--bg)">
+<h2 style="margin-bottom:6px">上傳設計圖自動辨識</h2>
+<input id="planFile" type="file" accept="image/*">
+<button id="planGo" style="margin-top:8px">辨識並建立區域</button>
+<div id="planMsg" class="note"></div>
+</div>
+<div id="regs"></div>
+<button id="add">＋ 新增區域</button>
+<div id="prev" style="margin-top:12px"></div>
+<div id="ovwarn"></div>
+</div>
+
+<div class="card">
+<h2>共用設定</h2>
+<div class="grid">
+<label>百葉間距<input id="sp" type="number" inputmode="decimal" value="30.5" step="0.5"></label>
+<label>完成面到頂高度<input id="H" type="number" inputmode="decimal" value="40"></label>
+<label>吊筋加長<input id="ext" type="number" inputmode="decimal" value="10"></label>
+<label>加強橫柱接長重疊<input id="ov" type="number" value="20"></label>
+<label>百葉 短<input id="b8" type="number" value="242.4"></label>
+<label>百葉 長<input id="b12" type="number" value="363.6"></label>
+<label>加強橫柱 短<input id="c8" type="number" value="242.4"></label>
+<label>加強橫柱 長<input id="c12" type="number" value="363.6"></label>
+<label>七字收邊<input id="ang" type="number" value="242"></label>
+<label>橫柱列間距<input id="rs" type="number" value="90"></label>
+<label>橫柱起訖距牆<input id="re" type="number" value="30"></label>
+<label>吊筋起訖距牆<input id="he" type="number" value="30"></label>
+<label>吊筋間距<input id="hs" type="number" value="90"></label>
+<label>封面板 長<input id="pl" type="number" inputmode="decimal" value="183"></label>
+<label>封面板 寬<input id="pw" type="number" inputmode="decimal" value="122"></label>
+<label>封面板損耗 %<input id="pp" type="number" inputmode="decimal" value="5"></label>
+<label>檢修孔補強橫柱外伸<input id="hx" type="number" value="90"></label>
+</div>
+<label class="chk"><input id="ub8" type="checkbox" checked>百葉 使用短料</label>
+<label class="chk"><input id="ub12" type="checkbox" checked>百葉 使用長料</label>
+<label class="chk"><input id="uc8" type="checkbox" checked>加強橫柱 使用短料</label>
+<label class="chk"><input id="uc12" type="checkbox" checked>加強橫柱 使用長料</label>
+<label class="chk"><input id="reuse" type="checkbox" checked>餘料重複利用（各區域合併計算）</label>
+<div class="note">預設 8尺=242.4、12尺=363.6 cm。百葉用專用插件接長不計重疊；加強橫柱不足時兩支重疊對鎖。</div>
+</div>
+
+<div id="out"></div>
+
+<script>
+const $=id=>document.getElementById(id), num=id=>parseFloat($(id).value)||0, E=1e-6;
+const f=x=>(Math.round(x*10)/10).toString();
+
+function positions(len,edge,step){
+  if(len<=0) return [];
+  if(len<=2*edge) return [len/2];
+  const p=[edge];
+  while(p[p.length-1]+step<len-edge-E) p.push(p[p.length-1]+step);
+  p.push(len-edge);
+  return p;
+}
+function split(len,maxS,ov=0){const a=[];let r=len;while(r>maxS+E&&maxS>ov){a.push(maxS);r=r-maxS+ov}if(r>E)a.push(r);return a}
+function pack(pieces,stocks,reuse){
+  stocks=[...stocks].sort((a,b)=>a-b);
+  const bars=[];pieces=[...pieces].sort((a,b)=>b-a);
+  for(const p of pieces){
+    let best=null;
+    if(reuse) for(const b of bars) if(b.rem>=p-E&&(!best||b.rem<best.rem)) best=b;
+    if(!best){
+      const s=stocks.find(x=>x>=p-E)||stocks[stocks.length-1];
+      best={size:s,rem:s,cuts:[]};bars.push(best);
+    }
+    best.rem-=p;best.cuts.push(p);
+  }
+  const cnt={};let used=0,total=0;
+  bars.forEach(b=>{cnt[b.size]=(cnt[b.size]||0)+1;total+=b.size;used+=b.size-b.rem});
+  return {bars,cnt,total,used};
+}
+function rows(cnt){return Object.keys(cnt).sort((a,b)=>a-b).map(k=>`<tr><td>${f(+k)} cm</td><td class="n">${cnt[k]} 支</td></tr>`).join('')}
+function cuts(bars){return bars.map(b=>`<span class="tag">${f(b.size)}：${b.cuts.map(f).join(' + ')}</span>`).join('')}
+function sec(title,r,extra){
+  const n=r.bars.length, loss=r.total?((r.total-r.used)/r.total*100):0;
+  return `<div class="card"><h2>${title}</h2><div class="big">${n} 支</div>
+  <table><tr><th>規格</th><th class="n">數量</th></tr>${rows(r.cnt)}</table>
+  <div class="note">${extra||''}損耗約 ${loss.toFixed(1)}%（餘料合計 ${f(r.total-r.used)} cm）</div>
+  <details><summary class="note">裁切明細</summary><div class="wrap">${cuts(r.bars)}</div></details></div>`;
+}
+
+// ---- 區域 UI ----
+let cnt=0;
+function addRegion(d){
+  cnt++;
+  d=Object.assign({name:'區域 '+cnt,x:0,y:0,w:300,h:300,dir:'L'},d||{});
+  const el=document.createElement('div');el.className='card reg';el.style.background='var(--bg)';
+  el.innerHTML=`<div class="hd"><input class="rn" value="${d.name}"><button class="del">刪除</button></div>
+  <div class="grid">
+  <label>長度（X 方向）<input class="rw" type="number" inputmode="decimal" value="${d.w}"></label>
+  <label>寬度（Y 方向）<input class="rh" type="number" inputmode="decimal" value="${d.h}"></label>
+  <label>X 位置（左上角）<input class="rx" type="number" inputmode="decimal" value="${d.x}"></label>
+  <label>Y 位置（左上角）<input class="ry" type="number" inputmode="decimal" value="${d.y}"></label>
+  <label>百葉走向<select class="rd"><option value="L">沿長度（X）</option><option value="W">沿寬度（Y）</option></select></label>
+  </div><div class="holes"></div><button class="addh" style="margin-top:10px">＋ 檢修孔</button>`;
+  el.querySelector('.rd').value=d.dir;
+  el.querySelector('.addh').onclick=()=>{addHole(el);calc()};
+  (d.holes||[]).forEach(h=>addHole(el,h));
+  el.querySelector('.del').onclick=()=>{if(document.querySelectorAll('.reg').length>1){el.remove();calc()}};
+  el.addEventListener('input',calc);
+  $('regs').appendChild(el);
+}
+function addHole(el,h){
+  h=Object.assign({w:60,h:60,x:100,y:100},h||{});
+  const d=document.createElement('div');d.className='hole';d.style.cssText='border-top:1px dashed var(--bd);margin-top:10px;padding-top:10px';
+  d.innerHTML=`<div class="hd"><span class="note" style="margin:0">檢修孔（位置為區域內座標）</span><button class="del">刪除</button></div><div class="grid">
+  <label>長度（X）<input class="hw" type="number" inputmode="decimal" value="${h.w}"></label>
+  <label>寬度（Y）<input class="hh" type="number" inputmode="decimal" value="${h.h}"></label>
+  <label>X 位置<input class="hx" type="number" inputmode="decimal" value="${h.x}"></label>
+  <label>Y 位置<input class="hy" type="number" inputmode="decimal" value="${h.y}"></label></div>`;
+  d.querySelector('.del').onclick=()=>{d.remove();calc()};
+  el.querySelector('.holes').appendChild(d);
+}
+function getRegs(){
+  return [...document.querySelectorAll('.reg')].map((e,i)=>({i,
+    name:e.querySelector('.rn').value||'區域',
+    w:+e.querySelector('.rw').value||0,h:+e.querySelector('.rh').value||0,
+    x:+e.querySelector('.rx').value||0,y:+e.querySelector('.ry').value||0,
+    dir:e.querySelector('.rd').value,
+    holes:[...e.querySelectorAll('.hole')].map((h,j)=>({i:j,w:+h.querySelector('.hw').value||0,h:+h.querySelector('.hh').value||0,x:+h.querySelector('.hx').value||0,y:+h.querySelector('.hy').value||0})).filter(o=>o.w>0&&o.h>0)})).filter(r=>r.w>0&&r.h>0);
+}
+$('add').onclick=()=>{
+  const R=getRegs();const x=R.length?Math.max(...R.map(r=>r.x+r.w)):0;
+  addRegion({x,y:R.length?R[R.length-1].y:0,w:300,h:300});calc();
+};
+
+// ---- 外牆（聯集外框）----
+function walls(R){
+  const xs=[...new Set(R.flatMap(r=>[r.x,r.x+r.w]))].sort((a,b)=>a-b);
+  const ys=[...new Set(R.flatMap(r=>[r.y,r.y+r.h]))].sort((a,b)=>a-b);
+  const fill=(i,j)=>{if(i<0||j<0||i>=xs.length-1||j>=ys.length-1)return false;
+    const cx=(xs[i]+xs[i+1])/2,cy=(ys[j]+ys[j+1])/2;
+    return R.some(r=>cx>r.x&&cx<r.x+r.w&&cy>r.y&&cy<r.y+r.h)};
+  const segs={};
+  const put=(k,a,b)=>{(segs[k]=segs[k]||[]).push([a,b])};
+  for(let i=0;i<xs.length-1;i++)for(let j=0;j<ys.length-1;j++){
+    if(!fill(i,j))continue;
+    if(!fill(i-1,j))put('V'+xs[i]+'L',ys[j],ys[j+1]);
+    if(!fill(i+1,j))put('V'+xs[i+1]+'R',ys[j],ys[j+1]);
+    if(!fill(i,j-1))put('H'+ys[j]+'U',xs[i],xs[i+1]);
+    if(!fill(i,j+1))put('H'+ys[j+1]+'D',xs[i],xs[i+1]);
+  }
+  const runs=[];
+  for(const k in segs){
+    const s=segs[k].sort((a,b)=>a[0]-b[0]);let cur=[...s[0]];
+    for(let n=1;n<s.length;n++){if(s[n][0]<=cur[1]+E)cur[1]=Math.max(cur[1],s[n][1]);else{runs.push(cur[1]-cur[0]);cur=[...s[n]]}}
+    runs.push(cur[1]-cur[0]);
+  }
+  return runs;
+}
+
+// ---- 預覽 ----
+let drag=null,view=null,raf=0,last=null;
+const svgOf=()=>$('prev').querySelector('svg');
+const svgPt=ev=>{const s=svgOf(),p=s.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;return p.matrixTransform(s.getScreenCTM().inverse())};
+
+$('prev').addEventListener('pointerdown',ev=>{
+  const t=ev.target.closest('[data-r]');if(!t)return;
+  const ri=+t.dataset.r,reg=document.querySelectorAll('.reg')[ri];if(!reg)return;
+  const isH=t.dataset.h!==undefined,hole=isH?reg.querySelectorAll('.hole')[+t.dataset.h]:null;
+  if(isH&&!hole)return;
+  const s=svgOf(),kx=isH?hole.querySelector('.hx'):reg.querySelector('.rx'),ky=isH?hole.querySelector('.hy'):reg.querySelector('.ry');
+  drag={reg,hole,isH,kx,ky,idx:ri,el:isH?t:s.querySelector(`[data-g="${ri}"]`),p0:svgPt(ev),
+    x0:+kx.value||0,y0:+ky.value||0,thr:10/s.getScreenCTM().a,
+    w:+reg.querySelector('.rw').value||0,h:+reg.querySelector('.rh').value||0,
+    hw:isH?(+hole.querySelector('.hw').value||0):0,hh:isH?(+hole.querySelector('.hh').value||0):0,
+    O:isH?[]:getRegs().filter(r=>r.i!==ri)};
+  drag.el.setAttribute('opacity','.8');
+  ev.preventDefault();
+});
+function applyDrag(){
+  raf=0;if(!drag||!last)return;
+  const d=drag,p=svgPt(last),vbx=svgOf().viewBox.baseVal;
+  let x=Math.round(d.x0+p.x-d.p0.x),y=Math.round(d.y0+p.y-d.p0.y),gx=null,gy=null;
+  const near=(cands,v,ks)=>{let best=null;for(const c of cands)for(const k of ks){const e=c-(v+k);if(Math.abs(e)<d.thr&&(best===null||Math.abs(e)<Math.abs(best.e)))best={e,line:c}}return best};
+  if(d.isH){
+    x=Math.max(0,Math.min(x,d.w-d.hw));y=Math.max(0,Math.min(y,d.h-d.hh));
+    const sx=near([0,(d.w-d.hw)/2,d.w-d.hw],x,[0]),sy=near([0,(d.h-d.hh)/2,d.h-d.hh],y,[0]);
+    if(sx)x+=sx.e;if(sy)y+=sy.e;
+  }else{
+    const sx=near(d.O.flatMap(o=>[o.x,o.x+o.w]),x,[0,d.w]),sy=near(d.O.flatMap(o=>[o.y,o.y+o.h]),y,[0,d.h]);
+    if(sx){x+=sx.e;gx=sx.line}if(sy){y+=sy.e;gy=sy.line}
+  }
+  d.el.setAttribute('transform',`translate(${x-d.x0} ${y-d.y0})`);
+  d.kx.value=x;d.ky.value=y;
+  const g=svgOf().querySelector('#guides');
+  g.innerHTML=(gx!==null?`<line x1="${gx}" x2="${gx}" y1="${vbx.y}" y2="${vbx.y+vbx.height}"/>`:'')+(gy!==null?`<line y1="${gy}" y2="${gy}" x1="${vbx.x}" x2="${vbx.x+vbx.width}"/>`:'');
+}
+window.addEventListener('pointermove',ev=>{if(!drag)return;last=ev;if(!raf)raf=requestAnimationFrame(applyDrag)});
+const endDrag=()=>{if(!drag)return;if(raf){cancelAnimationFrame(raf);raf=0;applyDrag()}drag=null;calc()};
+window.addEventListener('pointerup',endDrag);
+window.addEventListener('pointercancel',endDrag);
+
+function unionArea(R){
+  const xs=[...new Set(R.flatMap(r=>[r.x,r.x+r.w]))].sort((a,b)=>a-b);
+  const ys=[...new Set(R.flatMap(r=>[r.y,r.y+r.h]))].sort((a,b)=>a-b);
+  let A=0;
+  for(let i=0;i<xs.length-1;i++)for(let j=0;j<ys.length-1;j++){
+    const cx=(xs[i]+xs[i+1])/2,cy=(ys[j]+ys[j+1])/2;
+    if(R.some(r=>cx>r.x&&cx<r.x+r.w&&cy>r.y&&cy<r.y+r.h))A+=(xs[i+1]-xs[i])*(ys[j+1]-ys[j]);
+  }
+  return A;
+}
+function preview(R){
+  const x0=Math.min(...R.map(r=>r.x)),y0=Math.min(...R.map(r=>r.y));
+  const x1=Math.max(...R.map(r=>r.x+r.w)),y1=Math.max(...R.map(r=>r.y+r.h));
+  const m=Math.max(x1-x0,y1-y0),pad=m*0.3;
+  const fit={x:x0-pad,y:y0-pad,w:x1-x0+2*pad,h:y1-y0+2*pad};
+  // 視窗穩定：圖形仍在視窗內且大小合理時不重新縮放，避免放開滑鼠後畫面跳動
+  const bad=!view||x0<view.x||y0<view.y||x1>view.x+view.w||y1>view.y+view.h||(x1-x0)<view.w*0.25&&(y1-y0)<view.h*0.25;
+  if(bad)view=fit;
+  const fs=Math.max(view.w,view.h)/30;
+  const body=R.map(r=>`<g data-g="${r.i}"><rect data-r="${r.i}" x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="var(--ac)" fill-opacity=".22" stroke="var(--ac)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+  <text x="${r.x+r.w/2}" y="${r.y+r.h/2}" text-anchor="middle" dominant-baseline="middle" font-size="${fs}" fill="var(--tx)" pointer-events="none">${r.name} ${r.dir==='L'?'↔':'↕'}</text>`+
+  r.holes.map(o=>`<rect data-r="${r.i}" data-h="${o.i}" x="${r.x+o.x}" y="${r.y+o.y}" width="${o.w}" height="${o.h}" fill="var(--warn)" fill-opacity=".3" stroke="var(--warn)" stroke-dasharray="4 3" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`).join('')+`</g>`).join('');
+  $('prev').innerHTML=`<svg viewBox="${view.x} ${view.y} ${view.w} ${view.h}">${body}<g id="guides" pointer-events="none" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"></g></svg><div class="note">可直接拖動區域與檢修孔，靠近其他區域邊緣會自動吸附並顯示對齊線，放開後重新計算。↔ 百葉沿 X 方向，↕ 沿 Y 方向；橘色為檢修孔。</div>`;
+  svgOf().querySelectorAll('#guides').forEach(g=>g.setAttribute('style','vector-effect:non-scaling-stroke'));
+  let w='';
+  for(let i=0;i<R.length;i++)for(let j=i+1;j<R.length;j++){
+    const a=R[i],b=R[j];
+    if(Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x)>E&&Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y)>E)
+      w+=`<div class="warn">⚠ 「${a.name}」與「${b.name}」範圍重疊，重疊處材料會重複計算，請調整位置。</div>`;
+  }
+  R.forEach(r=>r.holes.forEach(o=>{if(o.x<0||o.y<0||o.x+o.w>r.w+E||o.y+o.h>r.h+E)w+=`<div class="warn">⚠ 「${r.name}」有檢修孔超出區域範圍，請檢查位置。</div>`}));
+  $('ovwarn').innerHTML=w;
+}
+
+function calc(){
+  const R=getRegs();
+  if(!R.length){$('out').innerHTML='';$('prev').innerHTML='';return}
+  preview(R);
+  const sp=num('sp')||30.5,H=num('H'),ext=num('ext'),he=num('he'),hs=num('hs')||90,rs=num('rs')||90,ov=num('ov'),reuse=$('reuse').checked,ang=num('ang');
+  const bs=[$('ub8').checked&&num('b8'),$('ub12').checked&&num('b12')].filter(x=>x>0);
+  const cs=[$('uc8').checked&&num('c8'),$('uc12').checked&&num('c12')].filter(x=>x>0);
+  if(!bs.length||!cs.length){$('out').innerHTML='<div class="card">請至少為百葉和加強橫柱各勾選一種材料規格。</div>';return}
+  const maxB=Math.max(...bs),maxC=Math.max(...cs),hl=H+ext;
+  let bp=[],cp=[],hp=[],info='',tB=0,tR=0,tH=0;
+  for(const r of R){
+    const Ld=r.dir==='L'?r.w:r.h, Lo=r.dir==='L'?r.h:r.w;
+    const nB=Math.max(1,Math.ceil(Lo/sp)-1);
+    for(let i=0;i<nB;i++)bp.push(...split(Ld,maxB));
+    const rowPos=positions(Ld,num('re'),rs),nR=rowPos.length;
+    for(let i=0;i<nR;i++)cp.push(...split(Lo,maxC,ov));
+    const hpos=positions(Lo,he,hs),nH=hpos.length*nR;
+    for(let i=0;i<nH;i++)hp.push(...split(hl,maxC));
+    // 檢修孔：開口兩側（百葉方向兩端）各補一支橫柱，每支 2 支吊筋；原橫柱列在 15 cm 內則視為已有
+    let hxn=0,hhn=0;
+    for(const o of r.holes){
+      const a=r.dir==='L'?o.x:o.y, b=a+(r.dir==='L'?o.w:o.h), sz=r.dir==='L'?o.h:o.w;
+      const len=Math.min(Lo,sz+2*num('hx'));
+      for(const edge of [a,b]){
+        if(rowPos.some(p=>Math.abs(p-edge)<=15))continue;
+        cp.push(...split(len,maxC,ov));hxn++;
+        for(let k=0;k<2;k++){hp.push(...split(hl,maxC));hhn++}
+      }
+    }
+    tB+=nB;tR+=nR+hxn;tH+=nH+hhn;
+    info+=`<tr><td>${r.name}</td><td class="n">${nB}×${f(Ld)}</td><td class="n">${nR}×${f(Lo)}${hxn?` +${hxn}補強`:''}</td><td class="n">${nH+hhn}</td></tr>`;
+  }
+  const rb=pack(bp,bs,reuse), rc=pack([...cp,...hp],cs,reuse);
+  const wl=walls(R), ap=wl.flatMap(w=>split(w,ang)), ra=pack(ap,[ang],reuse);
+  const per=wl.reduce((a,b)=>a+b,0);
+  const PING=3.30579,area=unionArea(R),holeA=R.reduce((q,r)=>q+r.holes.reduce((z,o)=>z+o.w*o.h,0),0);
+  const m2=area/1e4,netM2=Math.max(0,area-holeA)/1e4,bl=num('pl'),bw=num('pw'),lp=num('pp');
+  let rowsA='',byLayout=0;
+  for(const r of R){
+    const Ld_=r.dir==='L'?r.w:r.h,Lo_=r.dir==='L'?r.h:r.w;
+    const lay=bl>0&&bw>0?Math.ceil(Ld_/bl)*Math.ceil(Lo_/bw):0;
+    byLayout+=lay;
+    rowsA+=`<tr><td>${r.name}</td><td class="n">${(r.w*r.h/1e4).toFixed(2)} m²</td><td class="n">${(r.w*r.h/1e4/PING).toFixed(2)} 坪</td><td class="n">${lay}</td></tr>`;
+  }
+  let board='';
+  if(bl>0&&bw>0){
+    const byArea=Math.ceil(area/(bl*bw)*(1+lp/100));
+    board=`<h2 style="margin-top:14px">封面板（${f(bl)}×${f(bw)} cm）</h2>
+    <table><tr><td>依面積（不扣檢修孔，損耗 ${f(lp)}%）</td><td class="n"><b>${byArea} 片</b></td></tr>
+    <tr><td>依區域整片鋪排（板寬對齊百葉排列方向，板縫落在百葉上）</td><td class="n"><b>${byLayout} 片</b></td></tr></table>
+    ${Math.abs(bw/sp-Math.round(bw/sp))>0.01?'<div class="warn">⚠ 板寬不是百葉間距的整數倍，板縫無法對在百葉中間。</div>':`<div class="note">板寬 ${f(bw)} ÷ 百葉間距 ${f(sp)} ＝ ${Math.round(bw/sp)}，第 ${Math.round(bw/sp)} 支百葉對板邊（板縫落在百葉中間）。</div>`}<div class="note">面積法含損耗，適合估價；鋪排法為各區域邊角都用整片裁切，不含餘料再利用，適合保守叫料。兩種算法都不扣檢修孔。</div>`;
+  }
+  const summary=`<div class="card"><h2>總面積</h2><div class="big">${(m2/PING).toFixed(2)} 坪</div>
+    <div class="note" style="margin:2px 0 8px">${m2.toFixed(2)} m²（含檢修孔）；扣除檢修孔後 ${netM2.toFixed(2)} m² ＝ ${(netM2/PING).toFixed(2)} 坪（1 坪 ≈ 3.30579 m²）</div>
+    <div class="wrap"><table><tr><th>區域</th><th class="n">面積</th><th class="n">坪數</th><th class="n">整片鋪排</th></tr>${rowsA}</table></div>${board}</div>`;
+  $('out').innerHTML=
+    summary+`<div class="card"><h2>各區域明細</h2><div class="wrap"><table><tr><th>區域</th><th class="n">百葉 條×長</th><th class="n">橫柱 列×長</th><th class="n">吊筋</th></tr>${info}</table></div>
+    <div class="note">吊筋每支長 ${f(hl)} cm；橫柱不足時兩支重疊 ${f(ov)} cm 對鎖。檢修孔：兩側各補一支橫柱（外伸 ${f(num('hx'))} cm）、各 2 支吊筋；被切斷的百葉不扣料，算損耗。</div></div>`+
+    sec('百葉（共 '+tB+' 條）',rb,'')+
+    sec('加強橫柱（含吊筋）',rc,`橫柱共 ${tR} 列（${cp.length} 段）、吊筋 ${tH} 支。`)+
+    sec('七字收邊',ra,`外圍牆線共 ${wl.length} 段、總長 ${f(per)} cm（相鄰區域之間不算）。`)+
+    `<div class="note" style="padding:0 4px">未計入轉角及施工損耗，實際請多備 3–5%。</div>`;
+}
+document.querySelectorAll('#sp,#H,#ext,#ov,#b8,#b12,#c8,#c12,#ang,#rs,#re,#he,#hs,#hx,#pl,#pw,#pp,#ub8,#ub12,#uc8,#uc12,#reuse').forEach(e=>e.addEventListener('input',calc));
+addRegion({name:'主臥（左）',x:0,y:0,w:265.5,h:395.4,dir:'L'});addRegion({name:'客廳餐廳',x:275,y:0,w:314.4,h:690,dir:'L'});addRegion({name:'右臥',x:593,y:0,w:299.7,h:335,dir:'L'});calc();
+
+// ---- 設計圖辨識（需 Claude 授權；不可用時此區塊自動隱藏）----
+(async()=>{
+  let sample=null;
+  try{sample=window.claude&&await claude.use('sample')}catch(e){}
+  if(!sample)return;
+  try{if(!(await sample.limits()).images)return}catch(e){return}
+  $('aiCard').hidden=false;
+  const shrink=async file=>{
+    const bmp=await createImageBitmap(file),k=Math.min(1,1800/Math.max(bmp.width,bmp.height));
+    const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);
+    c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
+    return new Promise(r=>c.toBlob(r,'image/jpeg',0.85));
+  };
+  $('planGo').onclick=async()=>{
+    const file=$('planFile').files[0],msg=$('planMsg');
+    if(!file){msg.textContent='請先選擇一張設計圖。';return}
+    msg.textContent='辨識中，約需 10–30 秒…';$('planGo').disabled=true;
+    try{
+      const img=await shrink(file);
+      const prompt=`這是一張室內平面／天花板設計圖。請依圖上標註的尺寸（多為 mm，請換算成 cm），找出適合做輕鋼架暗架天花板的矩形空間（客廳、餐廳、臥室、書房、走道等；浴室、廚房、陽台除非圖上註明否則不列）。L 型等不規則空間請拆成相鄰矩形。以最左上角空間的左上角為原點 (0,0)，X 向右、Y 向下，單位 cm，相鄰房間之間牆厚約 10 cm。dir 為百葉走向：L＝沿 X 方向，W＝沿 Y 方向，預設選沿較短邊。holes 為檢修孔，只列圖上有標示的，x、y 為相對於該區域左上角。只輸出 JSON，不要其他文字：{"regions":[{"name":"","x":0,"y":0,"w":0,"h":0,"dir":"L","holes":[]}],"notes":"讀不清楚或用估計的地方"}`;
+      const res=await sample(prompt,{images:[img],modelTier:'complex',cache:false});
+      const m=res.text.match(/\{[\s\S]*\}/);
+      const data=JSON.parse(m[0]);
+      const rs=(data.regions||[]).filter(r=>r.w>0&&r.h>0);
+      if(!rs.length)throw new Error('沒有辨識到區域');
+      $('regs').innerHTML='';cnt=0;
+      rs.forEach(r=>addRegion({name:r.name||undefined,x:+r.x||0,y:+r.y||0,w:+r.w,h:+r.h,dir:r.dir==='W'?'W':'L',holes:(r.holes||[]).map(o=>({x:+o.x||0,y:+o.y||0,w:+o.w||60,h:+o.h||60}))}));
+      view=null;calc();
+      msg.textContent='已建立 '+rs.length+' 個區域，請核對尺寸後再使用。'+(data.notes?' 註記：'+data.notes:'');
+    }catch(e){msg.textContent='辨識失敗：'+(e.message||e.code||'請稍後再試')}
+    $('planGo').disabled=false;
+  };
+})();
+
+// ---- 貼上資料匯入（離線可用，GitHub 版也能用）----
+const PROMPT_TXT=`請看我上傳的室內平面／天花板設計圖，依圖上標註的尺寸（多為 mm，請換算成 cm），找出適合做輕鋼架暗架天花板的矩形空間（客廳、餐廳、臥室、書房、走道等；浴室、廚房、陽台除非我另外說明否則不列）。L 型等不規則空間請拆成相鄰矩形。以最左上角空間的左上角為原點 (0,0)，X 向右、Y 向下，單位 cm，相鄰房間之間牆厚約 10 cm。dir 為百葉走向：L＝沿 X 方向，W＝沿 Y 方向，預設選沿較短邊。holes 為檢修孔，只列圖上有標示的，x、y 為相對於該區域左上角。請先簡短列出你讀到的尺寸與不確定之處，最後附上一段 JSON（格式如下，不要改欄位名稱）：
+{"regions":[{"name":"","x":0,"y":0,"w":0,"h":0,"dir":"L","holes":[]}],"notes":""}`;
+$('cpPrompt').onclick=async()=>{
+  try{await navigator.clipboard.writeText(PROMPT_TXT);$('impMsg').textContent='已複製提示詞。'}
+  catch(e){$('impTxt').value=PROMPT_TXT;$('impTxt').select();$('impMsg').textContent='請手動全選複製上方文字（複製後再清空貼上框）。'}
+};
+$('impGo').onclick=()=>{
+  const msg=$('impMsg');
+  try{
+    const m=$('impTxt').value.match(/\{[\s\S]*\}/);
+    if(!m)throw new Error('找不到資料');
+    const data=JSON.parse(m[0]);
+    const rs=(data.regions||[]).filter(r=>+r.w>0&&+r.h>0);
+    if(!rs.length)throw new Error('沒有有效的區域');
+    $('regs').innerHTML='';cnt=0;
+    rs.forEach(r=>addRegion({name:r.name||undefined,x:+r.x||0,y:+r.y||0,w:+r.w,h:+r.h,dir:r.dir==='W'?'W':'L',holes:(r.holes||[]).map(o=>({x:+o.x||0,y:+o.y||0,w:+o.w||60,h:+o.h||60}))}));
+    view=null;calc();
+    msg.textContent='已匯入 '+rs.length+' 個區域，請核對尺寸。'+(data.notes?' 註記：'+data.notes:'');
+  }catch(e){msg.textContent='匯入失敗：'+e.message+'（請確認貼上的是 JSON 資料）'}
+};
+<\/script>
+</body>
+</html>
+</script>
+<script>
+(function(){
+  var loaded={},cur=null;
+  function src(k){return document.getElementById('src-'+k).textContent.replace(/<\\\/script>/g,'<'+'/script>')}
+  function fit(f){
+    try{var d=f.contentDocument;if(!d||!d.documentElement)return;
+      f.style.height=Math.ceil(d.documentElement.getBoundingClientRect().height)+'px'}catch(e){}
+  }
+  function load(k){
+    var f=document.getElementById('f-'+k);
+    if(loaded[k])return f;
+    loaded[k]=true;
+    f.addEventListener('load',function(){
+      fit(f);
+      try{new ResizeObserver(function(){fit(f)}).observe(f.contentDocument.documentElement)}catch(e){}
+    });
+    f.srcdoc=src(k);
+    return f;
+  }
+  function show(k){
+    cur=k;
+    ['mj','an'].forEach(function(x){
+      document.getElementById('t-'+x).classList.toggle('on',x===k);
+      document.getElementById('f-'+x).classList.toggle('on',x===k);
+    });
+    var f=load(k);fit(f);
+    try{localStorage.setItem('ceilingTab',k)}catch(e){}
+    try{history.replaceState(null,'','#'+k)}catch(e){}
+    window.scrollTo(0,0);
+  }
+  document.getElementById('t-mj').onclick=function(){show('mj')};
+  document.getElementById('t-an').onclick=function(){show('an')};
+  window.addEventListener('resize',function(){if(cur)fit(document.getElementById('f-'+cur))});
+  var h=(location.hash||'').replace('#','');
+  var s=null;try{s=localStorage.getItem('ceilingTab')}catch(e){}
+  show(h==='an'||h==='mj'?h:(s==='an'||s==='mj'?s:'mj'));
+})();
+</script>
+</body>
+</html>
