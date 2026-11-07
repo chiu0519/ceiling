@@ -491,7 +491,7 @@ function sec(title,r,extra){
 let cnt=0;
 function addRegion(d){
   cnt++;
-  d=Object.assign({name:'區域 '+cnt,x:0,y:0,w:300,h:300,dir:'L'},d||{});
+  d=Object.assign({name:'區域 '+cnt,x:0,y:0,w:300,h:300,dir:'L'},d||{});if(!d.name)d.name='區域 '+cnt;
   const el=document.createElement('div');el.className='card reg';el.style.background='var(--bg)';
   el.innerHTML=`<div class="hd"><input class="rn" value="${d.name}"><button class="del">刪除</button></div>
   <div class="grid">
@@ -697,7 +697,7 @@ function calc(){
     `<div class="note" style="padding:0 4px">未計入轉角及施工損耗，實際請多備 3–5%。</div>`;
 }
 document.querySelectorAll('#sp,#H,#ext,#ov,#b8,#b12,#c8,#c12,#ang,#rs,#re,#he,#hs,#hx,#pl,#pw,#pp,#ub8,#ub12,#uc8,#uc12,#reuse').forEach(e=>e.addEventListener('input',calc));
-addRegion({name:'主臥（左）',x:0,y:0,w:265.5,h:395.4,dir:'L'});addRegion({name:'客廳餐廳',x:275,y:0,w:314.4,h:690,dir:'L'});addRegion({name:'右臥',x:593,y:0,w:299.7,h:335,dir:'L'});calc();
+addRegion({name:'區域 1',w:500,h:400});calc();
 
 // ---- 設計圖辨識（需 Claude 授權；不可用時此區塊自動隱藏）----
 (async()=>{
